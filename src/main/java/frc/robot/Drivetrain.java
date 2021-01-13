@@ -6,7 +6,7 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.AnalogGyro;
 import edu.wpi.first.wpilibj.Encoder;
-import edu.wpi.first.wpilibj.PWMVictorSPX;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.geometry.Pose2d;
@@ -24,10 +24,10 @@ public class Drivetrain {
     private static final double kWheelRadius = Units.inchesToMeters(2);
     private static final int kEcoderResolution = 4096;
 
-    private final PWMVictorSPX m_leftLeader = new PWMVictorSPX(1);
-    private final PWMVictorSPX m_leftFollower = new PWMVictorSPX(2);
-    private final PWMVictorSPX m_rightLeader = new PWMVictorSPX(3);
-    private final PWMVictorSPX m_rightFollower = new PWMVictorSPX(4);
+    private final WPI_TalonSRX m_leftLeader = new WPI_TalonSRX(1);
+    private final WPI_TalonSRX m_leftFollower = new WPI_TalonSRX(2);
+    private final WPI_TalonSRX m_rightLeader = new WPI_TalonSRX(3);
+    private final WPI_TalonSRX m_rightFollower = new WPI_TalonSRX(4);
 
 
     private SpeedControllerGroup m_leftGroup = new SpeedControllerGroup(m_leftLeader, m_leftFollower);
@@ -48,7 +48,7 @@ public class Drivetrain {
 
     //Create a Simulation Model of the Drivtrain
     DifferentialDrivetrainSim m_driveSim = new DifferentialDrivetrainSim(
-        DCMotor.getNEO(2),          //driveMotor, 
+        DCMotor.getFalcon500(3),          //driveMotor, 
         7.25,                       //gearing, 
         7.5,                        //jKgMetersSquared, 
         60,                         //massKg, 
@@ -73,8 +73,6 @@ public class Drivetrain {
     }
 
     public void drivePercent(double left, double right){
-        SmartDashboard.putNumber("left Speed", m_leftLeader.getSpeed());
-        SmartDashboard.putNumber("right Speed", m_rightLeader.getSpeed());
         m_leftGroup.set(left);
         m_rightGroup.set(right);
     }
