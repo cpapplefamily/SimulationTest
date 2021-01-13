@@ -6,6 +6,9 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj.AnalogGyro;
 import edu.wpi.first.wpilibj.Encoder;
+
+import com.ctre.phoenix.motorcontrol.can.TalonFX;
+import com.ctre.phoenix.motorcontrol.can.WPI_TalonFX;
 import com.ctre.phoenix.motorcontrol.can.WPI_TalonSRX;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.SpeedControllerGroup;
@@ -30,6 +33,11 @@ public class Drivetrain {
     private final WPI_TalonSRX m_rightLeader = new WPI_TalonSRX(3);
     private final WPI_TalonSRX m_rightFollower = new WPI_TalonSRX(4);
 
+    //private final WPI_TalonFX m_leftLeader = new WPI_TalonFX(1);
+    //private final WPI_TalonFX m_leftFollower = new WPI_TalonFX(2);
+    //private final WPI_TalonFX m_rightLeader = new WPI_TalonFX(3);
+    //private final WPI_TalonFX m_rightFollower = new WPI_TalonFX(4);
+
 
     private SpeedControllerGroup m_leftGroup = new SpeedControllerGroup(m_leftLeader, m_leftFollower);
     private SpeedControllerGroup m_rightGroup = new SpeedControllerGroup(m_rightLeader, m_rightFollower);
@@ -41,6 +49,7 @@ public class Drivetrain {
     private final DifferentialDriveOdometry m_odometry = new DifferentialDriveOdometry(m_gyro.getRotation2d());
 
     //Simmulation Classes to help us simulate
+    private final double setDistancePerPulse = ( 2 * Math.PI * kWheelRadius / kEcoderResolution);
 
 
     private final AnalogGyroSim m_gyroSim = new AnalogGyroSim(m_gyro);
@@ -65,8 +74,8 @@ public class Drivetrain {
 
         m_rightGroup.setInverted(true);
         
-        //m_leftEncoder.reset();
-        //m_rightEncoder.reset();
+        m_leftLeader.setSelectedSensorPosition(0);
+        m_rightLeader.setSelectedSensorPosition(0);
 
         SmartDashboard.putData("Field", m_field);
     }
@@ -80,7 +89,7 @@ public class Drivetrain {
         SmartDashboard.putNumber("left Encoder", m_leftLeader.getSelectedSensorPosition());
         SmartDashboard.putNumber("right Encoder", m_rightLeader.getSelectedSensorPosition());
         SmartDashboard.putNumber("m_gyro", m_gyro.getRotation2d().getDegrees());
-        m_odometry.update(m_gyro.getRotation2d(), m_leftLeader.getSelectedSensorPosition(), m_rightLeader.getSelectedSensorPosition());
+        m_odometry.update(m_gyro.getRotation2d(), m_leftLeader.getSelectedSensorPosition()*setDistancePerPulse, m_rightLeader.getSelectedSensorPosition()*setDistancePerPulse);
     }
 
     public void resetOdometry(Pose2d pose){
@@ -107,17 +116,15 @@ public class Drivetrain {
         PhysicsSim.getInstance().run();
 
         // This method will be called once per scheduler run when in simulation
-        SmartDashboard.putNumber(" m_leftLeader", m_leftLeader.get());
-        SmartDashboard.putNumber(" RobotController.getInputVoltage()", RobotController.getInputVoltage());
         m_driveSim.setInputs(
             m_leftLeader.get() * RobotController.getInputVoltage(), 
             -m_rightLeader.get() * RobotController.getInputVoltage());
         m_driveSim.update(0.02);
 
-        m_leftLeader.getSimCollection().setQuadratureRawPosition((int) m_driveSim.getLeftPositionMeters());
-        m_leftLeader.getSimCollection().setQuadratureVelocity((int) m_driveSim.getLeftVelocityMetersPerSecond());
-        m_rightLeader.getSimCollection().setQuadratureRawPosition((int) m_driveSim.getRightPositionMeters());
-        m_rightLeader.getSimCollection().setQuadratureVelocity((int) m_driveSim.getRightPositionMeters());
+        m_leftLeader.getSimCollection().setQuadratureRawPosition((int) (m_driveSim.getLeftPositionMeters()/setDistancePerPulse));
+        m_leftLeader.getSimCollection().setQuadratureVelocity((int) (m_driveSim.getLeftVelocityMetersPerSecond()/setDistancePerPulse));
+        m_rightLeader.getSimCollection().setQuadratureRawPosition((int) (m_driveSim.getRightPositionMeters()/setDistancePerPulse));
+        m_rightLeader.getSimCollection().setQuadratureVelocity((int) (m_driveSim.getRightPositionMeters()/setDistancePerPulse));
         m_gyroSim.setAngle(-m_driveSim.getHeading().getDegrees());
 
     }
