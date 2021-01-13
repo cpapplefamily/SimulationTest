@@ -99,6 +99,10 @@ public class Robot extends TimedRobot {
     m_drivetrain.simulationPeriodic();
   }
 
+  @Override
+  public void simulationInit() {
+    m_drivetrain.simulationInit();
+  }
 }
 
 
