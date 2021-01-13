@@ -18,6 +18,7 @@ import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj.system.plant.DCMotor;
 import edu.wpi.first.wpilibj.util.Units;
+import frc.robot.sim.PhysicsSim;
 
 /** Add your docs here. */
 public class Drivetrain {
@@ -33,16 +34,14 @@ public class Drivetrain {
     private SpeedControllerGroup m_leftGroup = new SpeedControllerGroup(m_leftLeader, m_leftFollower);
     private SpeedControllerGroup m_rightGroup = new SpeedControllerGroup(m_rightLeader, m_rightFollower);
 
-    private final Encoder m_leftEncoder = new Encoder(0,1);
-    private final Encoder m_rightEncoder = new Encoder(2,3);
+
 
     private final AnalogGyro m_gyro = new AnalogGyro(0);
 
     private final DifferentialDriveOdometry m_odometry = new DifferentialDriveOdometry(m_gyro.getRotation2d());
 
     //Simmulation Classes to help us simulate
-    private final EncoderSim m_leftEncoderSim = new EncoderSim(m_leftEncoder);
-    private final EncoderSim m_rightEncoderSim = new EncoderSim(m_rightEncoder);
+
 
     private final AnalogGyroSim m_gyroSim = new AnalogGyroSim(m_gyro);
 
@@ -61,13 +60,13 @@ public class Drivetrain {
 
     public Drivetrain(){
         //Set the distance travled per Revolution of the encoder
-        m_leftEncoder.setDistancePerPulse( 2 * Math.PI * kWheelRadius / kEcoderResolution);
-        m_rightEncoder.setDistancePerPulse( 2 * Math.PI * kWheelRadius / kEcoderResolution);
+        //m_leftEncoder.setDistancePerPulse( 2 * Math.PI * kWheelRadius / kEcoderResolution);
+        //m_rightEncoder.setDistancePerPulse( 2 * Math.PI * kWheelRadius / kEcoderResolution);
 
         m_rightGroup.setInverted(true);
         
-        m_leftEncoder.reset();
-        m_rightEncoder.reset();
+        //m_leftEncoder.reset();
+        //m_rightEncoder.reset();
 
         SmartDashboard.putData("Field", m_field);
     }
@@ -78,28 +77,35 @@ public class Drivetrain {
     }
 
     public void updateOdometry(){
-        SmartDashboard.putNumber("left Encoder", m_leftEncoder.getDistance());
-        SmartDashboard.putNumber("right Encoder", m_rightEncoder.getDistance());
+        SmartDashboard.putNumber("left Encoder", m_leftLeader.getSelectedSensorPosition());
+        SmartDashboard.putNumber("right Encoder", m_rightLeader.getSelectedSensorPosition());
         SmartDashboard.putNumber("m_gyro", m_gyro.getRotation2d().getDegrees());
-        m_odometry.update(m_gyro.getRotation2d(), m_leftEncoder.getDistance(), m_rightEncoder.getDistance());
+        m_odometry.update(m_gyro.getRotation2d(), m_leftLeader.getSelectedSensorPosition(), m_rightLeader.getSelectedSensorPosition());
     }
 
     public void resetOdometry(Pose2d pose){
-        m_leftEncoder.reset();
-        m_rightEncoder.reset();
+        m_leftLeader.setSelectedSensorPosition(0);
+        m_rightLeader.setSelectedSensorPosition(0);
         m_driveSim.setPose(pose);
         m_odometry.resetPosition(pose, m_gyro.getRotation2d());
     }
 
     public double getDistanceMeters(){
-        return(m_leftEncoder.getDistance() + m_rightEncoder.getDistance()) / 2;
+        return(m_leftLeader.getSelectedSensorPosition() + m_rightLeader.getSelectedSensorPosition()) / 2;
     }
 
     public Pose2d getPose(){
         return m_odometry.getPoseMeters();
     }
 
+    public void simulationInit() {
+        PhysicsSim.getInstance().addTalonSRX(m_leftLeader, 0.75, 5100, false);
+        PhysicsSim.getInstance().addTalonSRX(m_rightLeader, 0.75, 5100, false);
+    }
+    
     public void simulationPeriodic() {
+        PhysicsSim.getInstance().run();
+
         // This method will be called once per scheduler run when in simulation
         SmartDashboard.putNumber(" m_leftLeader", m_leftLeader.get());
         SmartDashboard.putNumber(" RobotController.getInputVoltage()", RobotController.getInputVoltage());
@@ -108,10 +114,10 @@ public class Drivetrain {
             -m_rightLeader.get() * RobotController.getInputVoltage());
         m_driveSim.update(0.02);
 
-        m_leftEncoderSim.setDistance(m_driveSim.getLeftPositionMeters());
-        m_leftEncoderSim.setRate(m_driveSim.getLeftVelocityMetersPerSecond());
-        m_rightEncoderSim.setDistance(m_driveSim.getRightPositionMeters());
-        m_rightEncoderSim.setRate(m_driveSim.getRightPositionMeters());
+        m_leftLeader.getSimCollection().setQuadratureRawPosition((int) m_driveSim.getLeftPositionMeters());
+        m_leftLeader.getSimCollection().setQuadratureVelocity((int) m_driveSim.getLeftVelocityMetersPerSecond());
+        m_rightLeader.getSimCollection().setQuadratureRawPosition((int) m_driveSim.getRightPositionMeters());
+        m_rightLeader.getSimCollection().setQuadratureVelocity((int) m_driveSim.getRightPositionMeters());
         m_gyroSim.setAngle(-m_driveSim.getHeading().getDegrees());
 
     }
